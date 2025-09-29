@@ -31,10 +31,23 @@ def login():
         "password": password
     })
     print(r.json())
+    
+def read_me():
+    print("=== Read my profile ===")
+    token = input("Token: ")
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+    r = requests.get(f"{API_URL}/me", headers=headers)
+    print(r.json())
 
 if __name__ == "__main__":
-    answer = int(input("Press 1 to register 2 to login: "))
+    answer = int(input("Press 1 to register, 2 to login, 3 to read profile: "))
     if answer == 1:
         register()
     elif answer == 2:
         login()
+    elif answer == 3:
+        read_me()
+    else:
+        print("Invalid option")

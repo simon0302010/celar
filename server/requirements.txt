@@ -1,2 +1,4 @@
 fastapi
 python-jose
+bcrypt
+uvicorn

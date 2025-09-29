@@ -4,12 +4,17 @@ from jose import jwt, JWTError
 from pydantic import BaseModel
 from typing import List
 import sqlite3
-import secrets
 import bcrypt
+import sys
+import os
 
 # vars for tokens
-TOKEN_KEY = secrets.token_urlsafe(32)
+TOKEN_KEY = os.environ.get("CELAR_KEY")
 TOKEN_ALGORITHM = "HS256"
+
+if not TOKEN_KEY:
+    print("Please set CELAR_KEY.")
+    sys.exit(1)
 
 app = FastAPI()
 DB_FILE = "database.db"
@@ -101,3 +106,14 @@ def login(user: UserLogin):
         expires=timedelta(hours=24)
     )
     return {"message": "Login successful", "access_token": access_token, "token_type": "bearer"}
+
+@app.get("/me")
+def read_me(current_user: str = Depends(get_user)):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT username, age, interests FROM users WHERE username=?", (current_user,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"username": row[0], "age": row[1], "interests": row[2].split(",")}
