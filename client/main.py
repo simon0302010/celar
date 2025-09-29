@@ -1,8 +1,10 @@
 import questionary
 import requests
 import sys
+import os
 
 API_URL = "http://127.0.0.1:8000"
+ACCESS_TOKEN = None
 
 def register():
     print("=== Register ===")
@@ -20,66 +22,79 @@ def register():
         "password": password,
         "age": age,
         "interests": [i.strip() for i in interests]
-    })
-    print(r.json())
+    }).json()
+    print(r)
 
 def login():
+    global ACCESS_TOKEN
     print("=== Login ===")
     username = input("Username: ")
     password = input("Password: ")
     r = requests.post(f"{API_URL}/login", json={
         "username": username,
         "password": password
-    })
-    print(r.json())
+    }).json()
+    os.environ["CELAR_ACCESS_TOKEN"] = r["access_token"]
+    ACCESS_TOKEN = r["access_token"]
+    print(r)
     
 def read_me():
     print("=== Read my profile ===")
-    token = input("Token: ")
     headers = {
-        "Authorization": f"Bearer {token}"
+        "Authorization": f"Bearer {ACCESS_TOKEN}"
     }
-    r = requests.get(f"{API_URL}/profile", headers=headers)
-    print(r.json())
+    r = requests.get(f"{API_URL}/profile", headers=headers).json()
+    print(r)
     
 def read_other():
     print("=== Read other profile ===")
     username = input("Username: ")
-    token = input("Token: ")
     headers = {
-        "Authorization": f"Bearer {token}"
+        "Authorization": f"Bearer {ACCESS_TOKEN}"
     }
-    r = requests.get(f"{API_URL}/profile/{username}", headers=headers)
-    print(r.json())
+    r = requests.get(f"{API_URL}/profile/{username}", headers=headers).json()
+    print(r)
     
 def get_users():
     print("=== Get users ===")
     limit = input("Limit: ")
-    token = input("Token: ")
     headers = {
-        "Authorization": f"Bearer {token}"
+        "Authorization": f"Bearer {ACCESS_TOKEN}"
     }
-    r = requests.get(f"{API_URL}/users?limit={limit}", headers=headers)
-    print(r.json())
+    r = requests.get(f"{API_URL}/users?limit={limit}", headers=headers).json()
+    print(r)
 
 if __name__ == "__main__":
-    answer = questionary.select(
-    "What do you want to do?",
-    choices=[
-        "Register",
-        "Login",
-        "Read own profile",
-        "Read other profile",
-        "Get all users"
-    ]).ask()
-    
-    if answer == "Register":
-        register()
-    elif answer == "Login":
-        login()
-    elif answer == "Read own profile":
-        read_me()
-    elif answer == "Read other profile":
-        read_other()
-    elif answer == "Get all users":
-        get_users()
+    while True:        
+        answer = questionary.select(
+        "What do you want to do?",
+        choices=[
+            "Register",
+            "Login", 
+            "Read own profile",
+            "Read other profile",
+            "Get all users",
+            "Exit"
+        ]).ask()
+        
+        if answer == "Exit":
+            break
+        elif answer == "Register":
+            register()
+        elif answer == "Login":
+            login()
+        elif answer == "Read own profile":
+            if not ACCESS_TOKEN:
+                print("Please register or login first")
+                sys.exit(1)
+            read_me()
+        elif answer == "Read other profile":
+            if not ACCESS_TOKEN:
+                print("Please register or login first")
+                sys.exit(1)
+            read_other()
+        elif answer == "Get all users":
+            if not ACCESS_TOKEN:
+                print("Please register or login first")
+                sys.exit(1)
+            get_users()
