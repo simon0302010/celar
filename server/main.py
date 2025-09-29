@@ -7,6 +7,7 @@ import sqlite3
 import bcrypt
 import sys
 import os
+from fastapi import Query
 
 # vars for tokens
 TOKEN_KEY = os.environ.get("CELAR_KEY")
@@ -107,7 +108,7 @@ def login(user: UserLogin):
     )
     return {"message": "Login successful", "access_token": access_token, "token_type": "bearer"}
 
-@app.get("/me")
+@app.get("/profile")
 def read_me(current_user: str = Depends(get_user)):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -117,3 +118,30 @@ def read_me(current_user: str = Depends(get_user)):
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
     return {"username": row[0], "age": row[1], "interests": row[2].split(",")}
+
+@app.get("/profile/{username}")
+def read_other(username: str, current_user: str = Depends(get_user)):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT username, age, interests FROM users WHERE username=?", (username,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"username": row[0], "age": row[1], "interests": row[2].split(",")}
+    
+@app.get("/users")
+def get_users(
+    current_user: str = Depends(get_user),
+    limit: int = Query(50, ge=1, le=200)
+):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT username, age, interests FROM users LIMIT ?", (limit,))
+    rows = c.fetchall()
+    conn.close()
+    users = [
+        {"username": row[0], "age": row[1], "interests": row[2].split(",")}
+        for row in rows
+    ]
+    return users

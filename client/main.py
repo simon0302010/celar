@@ -1,3 +1,4 @@
+import questionary
 import requests
 import sys
 
@@ -38,16 +39,47 @@ def read_me():
     headers = {
         "Authorization": f"Bearer {token}"
     }
-    r = requests.get(f"{API_URL}/me", headers=headers)
+    r = requests.get(f"{API_URL}/profile", headers=headers)
+    print(r.json())
+    
+def read_other():
+    print("=== Read other profile ===")
+    username = input("Username: ")
+    token = input("Token: ")
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+    r = requests.get(f"{API_URL}/profile/{username}", headers=headers)
+    print(r.json())
+    
+def get_users():
+    print("=== Get users ===")
+    limit = input("Limit: ")
+    token = input("Token: ")
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+    r = requests.get(f"{API_URL}/users?limit={limit}", headers=headers)
     print(r.json())
 
 if __name__ == "__main__":
-    answer = int(input("Press 1 to register, 2 to login, 3 to read profile: "))
-    if answer == 1:
+    answer = questionary.select(
+    "What do you want to do?",
+    choices=[
+        "Register",
+        "Login",
+        "Read own profile",
+        "Read other profile",
+        "Get all users"
+    ]).ask()
+    
+    if answer == "Register":
         register()
-    elif answer == 2:
+    elif answer == "Login":
         login()
-    elif answer == 3:
+    elif answer == "Read own profile":
         read_me()
-    else:
-        print("Invalid option")
+    elif answer == "Read other profile":
+        read_other()
+    elif answer == "Get all users":
+        get_users()
