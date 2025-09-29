@@ -33,7 +33,7 @@ def login():
     print(r.json())
 
 if __name__ == "__main__":
-    answer = int(input("Press 1 to registers and press 2 to login: "))
+    answer = int(input("Press 1 to register 2 to login: "))
     if answer == 1:
         register()
     elif answer == 2:

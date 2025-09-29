@@ -1,8 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
+from datetime import datetime, timedelta, timezone
+from jose import jwt, JWTError
 from pydantic import BaseModel
 from typing import List
 import sqlite3
+import secrets
 import bcrypt
+
+# vars for tokens
+TOKEN_KEY = secrets.token_urlsafe(32)
+TOKEN_ALGORITHM = "HS256"
 
 app = FastAPI()
 DB_FILE = "database.db"
@@ -22,6 +29,30 @@ def init_db():
     conn.close()
     
 init_db()
+
+def generate_token(data: dict, expires: timedelta):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + expires
+    to_encode.update({"exp": int(expire.timestamp())})
+    return jwt.encode(to_encode, TOKEN_KEY, algorithm=TOKEN_ALGORITHM)
+
+def get_user(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization.split( )[1]
+    try:
+        payload = jwt.decode(token, TOKEN_KEY, algorithms=[TOKEN_ALGORITHM])
+        username = payload.get("sub")
+        exp = payload.get("exp")
+        if exp:
+            exp = datetime.fromtimestamp(payload["exp"], timezone.utc)
+            if exp < datetime.now(timezone.utc):
+                raise HTTPException(status_code=401, detail="Token expired")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 # models
 class UserCreate(BaseModel):
@@ -65,4 +96,8 @@ def login(user: UserLogin):
     conn.close()
     if not row or not bcrypt.checkpw(user.password.encode('utf-8'), row[0].encode('utf-8')):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"message": "Login successful"}
+    access_token = generate_token(
+        data={"sub": user.username},
+        expires=timedelta(hours=24)
+    )
+    return {"message": "Login successful", "access_token": access_token, "token_type": "bearer"}
