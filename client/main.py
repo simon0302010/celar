@@ -10,18 +10,48 @@ def register():
     print("=== Register ===")
     username = input("Username: ")
     password = input("Password: ")
-    age = input("Age: ")
-    if not age.isnumeric():
-        print("Please input a number.")
-        sys.exit(1)
-    interests = input("Interests (comma-separated): ").split(",")
-    for interest in interests:
-        interest.strip()
+    operating_systems = questionary.checkbox(
+        "Which Operating Systems do you use?",
+        choices=[
+            "Linux",
+            "Windows",
+            "macOS",
+            "Android",
+            "iOS",
+            "OpenBSD",
+            "FreeBSD",
+            "ChromeOS"
+        ]
+    ).ask()
+    programming_languages = questionary.checkbox(
+        "Which programming languages do you use?",
+        choices=[
+            "Python",
+            "JavaScript",
+            "TypeScript",
+            "Java",
+            "C",
+            "C++",
+            "C#",
+            "Go",
+            "Rust",
+            "Swift",
+            "Kotlin",
+            "PHP",
+            "Scala",
+            "Ruby",
+            "Perl",
+            "Haskell",
+            "Dart",
+            "Elixir",
+            "Fortran",
+            "Assembly"
+        ]
+    ).ask()
     r = requests.post(f"{API_URL}/register", json={
         "username": username,
         "password": password,
-        "age": age,
-        "interests": [i.strip() for i in interests]
+        "software": software
     }).json()
     print(r)
 
@@ -86,15 +116,15 @@ if __name__ == "__main__":
         elif answer == "Read own profile":
             if not ACCESS_TOKEN:
                 print("Please register or login first")
-                sys.exit(1)
+                continue
             read_me()
         elif answer == "Read other profile":
             if not ACCESS_TOKEN:
                 print("Please register or login first")
-                sys.exit(1)
+                continue
             read_other()
         elif answer == "Get all users":
             if not ACCESS_TOKEN:
                 print("Please register or login first")
-                sys.exit(1)
+                continue
             get_users()

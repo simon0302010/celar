@@ -1,13 +1,13 @@
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, Query
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from pydantic import BaseModel
 from typing import List
 import sqlite3
 import bcrypt
+import json
 import sys
 import os
-from fastapi import Query
 
 # vars for tokens
 TOKEN_KEY = os.environ.get("CELAR_KEY")
@@ -26,9 +26,8 @@ def init_db():
     c.execute("""
        CREATE TABLE IF NOT EXISTS users (
            username TEXT PRIMARY KEY,
-           password TEXT,
-           age INTEGER,
-           interests TEXT
+           password TEXT NOT NULL,
+           software TEXT
        ) 
     """)
     conn.commit()
@@ -64,8 +63,7 @@ def get_user(authorization: str = Header(...)):
 class UserCreate(BaseModel):
     username: str
     password: str
-    age: int
-    interests: List[str]
+    software: List[str]
 
 class UserLogin(BaseModel):
     username: str
@@ -73,8 +71,7 @@ class UserLogin(BaseModel):
 
 class UserOut(BaseModel):
     username: str
-    age: int
-    interests: List[str]
+    software: List[str]
 
 # endpoints
 @app.post("/register")
@@ -87,8 +84,8 @@ def register(user: UserCreate):
     c.execute("SELECT username FROM users WHERE username=?", (user.username,))
     if c.fetchone():
         raise HTTPException(status_code=400, detail="Username already exists")
-    c.execute("INSERT INTO users (username, password, age, interests) VALUES (?, ?, ?, ?)",
-              (user.username, hashed_pw, user.age, ",".join(user.interests)))
+    c.execute("INSERT INTO users (username, password, software) VALUES (?, ?, ?)",
+              (user.username, hashed_pw, json.dumps(user.software)))
     conn.commit()
     conn.close()
     return {"message": "User registered successfully"}
@@ -104,7 +101,7 @@ def login(user: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     access_token = generate_token(
         data={"sub": user.username},
-        expires=timedelta(hours=24)
+        expires=timedelta(minutes=1)
     )
     return {"message": "Login successful", "access_token": access_token, "token_type": "bearer"}
 
@@ -112,23 +109,23 @@ def login(user: UserLogin):
 def read_me(current_user: str = Depends(get_user)):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT username, age, interests FROM users WHERE username=?", (current_user,))
+    c.execute("SELECT username, software FROM users WHERE username=?", (current_user,))
     row = c.fetchone()
     conn.close()
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"username": row[0], "age": row[1], "interests": row[2].split(",")}
+    return {"username": row[0], "software": json.loads(row[1])}
 
 @app.get("/profile/{username}")
 def read_other(username: str, current_user: str = Depends(get_user)):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT username, age, interests FROM users WHERE username=?", (username,))
+    c.execute("SELECT username, software FROM users WHERE username=?", (username,))
     row = c.fetchone()
     conn.close()
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"username": row[0], "age": row[1], "interests": row[2].split(",")}
+    return {"username": row[0], "software": json.loads(row[1])}
     
 @app.get("/users")
 def get_users(
@@ -137,11 +134,11 @@ def get_users(
 ):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT username, age, interests FROM users LIMIT ?", (limit,))
+    c.execute("SELECT username, software FROM users LIMIT ?", (limit,))
     rows = c.fetchall()
     conn.close()
     users = [
-        {"username": row[0], "age": row[1], "interests": row[2].split(",")}
+        {"username": row[0], "software": json.loads(row[1])}
         for row in rows
     ]
     return users
