@@ -8,7 +8,7 @@ Vertical {
     height: auto;
 }
 
-Button {
+.main-menu-button {
     width: 20;
     margin: 1 15;
 }
@@ -16,4 +16,11 @@ Button {
 #welcome {
     text-align: center;
     width: 50;
+}
+
+.login-menu {
+    width: 50;
+    margin: 1 0;
+    content-align: center middle;
+    text-align: center;
 }
