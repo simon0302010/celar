@@ -1,0 +1,19 @@
+Screen {
+    align: center middle;
+}
+
+Vertical {
+    content-align: center middle;
+    width: auto;
+    height: auto;
+}
+
+Button {
+    width: 20;
+    margin: 1 15;
+}
+
+#welcome {
+    text-align: center;
+    width: 50;
+}

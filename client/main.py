@@ -51,7 +51,7 @@ def register():
     r = requests.post(f"{API_URL}/register", json={
         "username": username,
         "password": password,
-        "software": software
+        "software": operating_systems + programming_languages
     }).json()
     print(r)
 
