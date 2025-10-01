@@ -1,11 +1,25 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, Button, Static, Input
-from textual.containers import Vertical
+from textual.widget import Widget
+from textual.widgets import Footer, Header, Button, Static, Input, Checkbox
+from textual.containers import Vertical, VerticalScroll
 from textual.screen import Screen
 import requests
 
 CELAR_TOKEN = None
 API_URL = "http://127.0.0.1:8000"
+
+class MultiCheckbox(VerticalScroll):
+    def __init__(self, options, **kwargs):
+        super().__init__(**kwargs)
+        self.options = options
+        self.checkboxes = [Checkbox(label=opt, id=opt) for opt in options]
+
+    def compose(self) -> ComposeResult:
+        for cb in self.checkboxes:
+            yield cb
+
+    def get_selected(self):
+        return [cb.label for cb in self.checkboxes if cb.value]
 
 class MainMenu(Screen):
     def compose(self) -> ComposeResult:
@@ -74,6 +88,10 @@ class RegisterMenu(Screen):
     def __init__(self):
         super().__init__()
         self.values = {"username": "", "password": "", "password2": ""}
+        self.operating_systems = ["Linux", "Windows", "macOS", "Android", "iOS", "OpenBSD", "FreeBSD", "ChromeOS"]
+        self.os_widget = MultiCheckbox(self.operating_systems, classes="login-menu")
+        self.programming_languages = ["Python", "JavaScript", "TypeScript", "Java", "C", "CPP", "CSharp", "Go", "Rust", "Swift", "Kotlin", "PHP", "Scala", "Ruby", "Perl", "Haskell", "Dart", "Elixir", "Fortran", "Assembly"]
+        self.lang_widget = MultiCheckbox(self.programming_languages, classes="login-menu")
     
     def compose(self) -> ComposeResult:
         yield Header()
@@ -82,6 +100,10 @@ class RegisterMenu(Screen):
             Input(placeholder="Username", classes="login-menu", id="username"),
             Input(placeholder="Password", classes="login-menu", id="password", password=True),
             Input(placeholder="Confirm password", classes="login-menu", id="password2", password=True),
+            Static("Select what operating system(s) you use:", classes="login-menu"),
+            self.os_widget,
+            Static("Select the programming language(s) you use:", classes="login-menu"),
+            self.lang_widget,
             Button("Register", id="submit", variant="success", classes="login-menu"),
             Button("Back", id="back", variant="error", classes="login-menu")
         )
@@ -91,6 +113,7 @@ class RegisterMenu(Screen):
         if event.button.id == "back":
             self.app.push_screen(MainMenu())
         if event.button.id == "submit":
+            software = self.os_widget.get_selected() + self.lang_widget.get_selected()
             username = self.values["username"]
             password = self.values["password"]
             password2 = self.values["password2"]
@@ -98,19 +121,19 @@ class RegisterMenu(Screen):
                 self.notify("Passwords don't match.", severity="warning")
                 return
             if username and password:
-                self.register(username, password)
+                self.register(username, password, software)
             else:
                 self.notify("Username and password can't be empty.", severity="error")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self.values[str(event.input.id) or ""] = event.input.value
         
-    def register(self, username, password):
+    def register(self, username, password, software):
         global CELAR_TOKEN
         r = requests.post(f"{API_URL}/register", json={
             "username": username,
             "password": password,
-            "software": []
+            "software": [str(item) for item in software]
         })
         if r.status_code == 200:
             self.notify("Register successful.")
