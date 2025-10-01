@@ -21,6 +21,11 @@ class MultiCheckbox(VerticalScroll):
     def get_selected(self):
         return [cb.label for cb in self.checkboxes if cb.value]
 
+class Feed(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Footer()
+
 class MainMenu(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
@@ -72,13 +77,18 @@ class LoginMenu(Screen):
         
     def login(self, username, password):
         global CELAR_TOKEN
-        r = requests.post(f"{API_URL}/login", json={
-            "username": username,
-            "password": password
-        })
+        try:
+            r = requests.post(f"{API_URL}/login", json={
+                "username": username,
+                "password": password
+            })
+        except:
+            self.notify("Couldn't connect to server.", severity="error")
+            return
         if r.status_code == 200:
             CELAR_TOKEN = r.json()["access_token"]
             self.notify("Login successful.")
+            self.app.push_screen(Feed())
         elif r.status_code == 401:
             self.notify("Username or password incorrect.", severity="error")
         else:
@@ -130,11 +140,15 @@ class RegisterMenu(Screen):
         
     def register(self, username, password, software):
         global CELAR_TOKEN
-        r = requests.post(f"{API_URL}/register", json={
-            "username": username,
-            "password": password,
-            "software": [str(item) for item in software]
-        })
+        try:
+            r = requests.post(f"{API_URL}/register", json={
+                "username": username,
+                "password": password,
+                "software": [str(item) for item in software]
+            })
+        except:
+            self.app.notify("Couldn't connect to server.", severity="error")
+            return
         if r.status_code == 200:
             self.notify("Register successful.")
             self.app.push_screen(LoginMenu())
@@ -149,6 +163,7 @@ class CelarApp(App):
 
     def on_mount(self) -> None:
         """Called when the app starts"""
+        self.title = "Celar"
         self.push_screen(MainMenu())
         
     def action_toggle_dark(self) -> None:
