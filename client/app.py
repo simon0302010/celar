@@ -4,6 +4,7 @@ from textual.widgets import Footer, Header, Button, Static, Input, Checkbox
 from textual_image.widget import Image
 from textual.containers import Vertical, VerticalScroll, VerticalGroup
 from textual.screen import Screen
+from datetime import datetime, timezone
 from PIL import Image as PILImage
 from PIL import ImageFilter as PILImageFilter
 from io import BytesIO
@@ -19,9 +20,15 @@ class Post(VerticalGroup):
         self.add_class("post")
         self.post_id = post_id
         self.author = author
-        self.created_at = created_at
+        created_dt = datetime.fromisoformat(created_at)
+        self.created_at = created_dt.strftime("%B %d, %Y %H:%M UTC")
         img_data = base64.b64decode(content)
         self.img = PILImage.open(BytesIO(img_data))
+        try:
+            self.img.seek(0)
+        except (AttributeError, EOFError):
+            pass
+        self.img = self.img.convert("RGB")
         # resize and fill rest with blurred version of image
         self.img.thumbnail((512, 512), PILImage.Resampling.LANCZOS)
         blurred_bg = self.img.copy().resize((512, 512), PILImage.Resampling.LANCZOS).filter(PILImageFilter.GaussianBlur(20))
@@ -75,8 +82,11 @@ class Feed(Screen):
     
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("Feed", classes="feed-text")
-        yield PostScroll(self.posts)
+        if self.posts:
+            yield Static("Feed", classes="feed-text")
+            yield PostScroll(self.posts)
+        else:
+            yield Static("No posts found.", classes="feed-text")
         yield Footer()
 
 class MainMenu(Screen):
