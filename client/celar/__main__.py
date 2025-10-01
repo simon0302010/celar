@@ -11,6 +11,10 @@ from PIL import ImageFilter as PILImageFilter
 from io import BytesIO
 import requests
 import base64
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
 
 CELAR_TOKEN = None
 API_URL = "http://127.0.0.1:8000"
@@ -279,7 +283,11 @@ class RegisterMenu(Screen):
             self.notify("An error occurred.", severity="error")
         
 class CelarApp(App):
-    CSS_PATH = "app.tcss"
+    try:
+        css_content = (files("celar") / "celar.tcss").read_text()
+        CSS = css_content
+    except FileNotFoundError:
+        CSS_PATH = "celar.tcss"
     BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
 
     def on_mount(self) -> None:
@@ -292,6 +300,9 @@ class CelarApp(App):
             "textual-dark" if self.theme == "textual-light" else "textual-light"
         )
 
-if __name__ == "__main__":
+def main():
     app = CelarApp()
     app.run()
+
+if __name__ == "__main__":
+    main()
