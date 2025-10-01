@@ -32,7 +32,7 @@ Vertical {
 }
 
 Image {
-    height: 35;
+    height: 30;
     width: 100%;
 }
 
@@ -40,7 +40,11 @@ Post {
     background: $boost;
     padding: 1;
     content-align: center middle;
-    height: 41;
+    height: 36;
     width: 60;
     margin: 1 8;
+}
+
+PostScroll {
+    align: center middle;
 }

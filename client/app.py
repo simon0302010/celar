@@ -75,6 +75,7 @@ class MultiCheckbox(VerticalScroll):
 class Feed(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.app.title = "Celar Feed"
         headers = {
             "Authorization": f"Bearer {CELAR_TOKEN}"
         }
@@ -83,7 +84,6 @@ class Feed(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         if self.posts:
-            yield Static("Feed", classes="feed-text")
             yield PostScroll(self.posts)
         else:
             yield Static("No posts found.", classes="feed-text")
