@@ -5,6 +5,7 @@ from textual_image.widget import Image
 from textual.containers import Vertical, VerticalScroll, VerticalGroup
 from textual.screen import Screen
 from PIL import Image as PILImage
+from PIL import ImageFilter as PILImageFilter
 from io import BytesIO
 import requests
 import base64
@@ -15,15 +16,27 @@ API_URL = "http://127.0.0.1:8000"
 class Post(VerticalGroup):
     def __init__(self, post_id, author: str, content: bytes, created_at: str, **kwargs):
         super().__init__(**kwargs)
-        self.post_id = post_id  # Use post_id instead of id
+        self.add_class("post")
+        self.post_id = post_id
         self.author = author
         self.created_at = created_at
         img_data = base64.b64decode(content)
         self.img = PILImage.open(BytesIO(img_data))
-            
+        # resize and fill rest with blurred version of image
+        self.img.thumbnail((512, 512), PILImage.Resampling.LANCZOS)
+        blurred_bg = self.img.copy().resize((512, 512), PILImage.Resampling.LANCZOS).filter(PILImageFilter.GaussianBlur(20))
+
+        new_img = PILImage.new("RGB", (512, 512))
+        new_img.paste(blurred_bg, (0, 0))
+
+        x = (512 - self.img.width) // 2
+        y = (512 - self.img.height) // 2
+        new_img.paste(self.img, (x, y))
+
+        self.img = new_img
     def compose(self) -> ComposeResult:
-        yield Static(self.author)
-        yield Static(self.created_at)
+        yield Static(self.author, classes="feed-text")
+        yield Static(self.created_at, classes="feed-text")
         yield Image(self.img)
         
 class PostScroll(VerticalScroll):

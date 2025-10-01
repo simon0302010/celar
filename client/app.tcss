@@ -27,4 +27,20 @@ Vertical {
 
 .feed-text {
     text-align: center;
+    width: 100%;
+    margin: 0 0 1 0;
+}
+
+Image {
+    height: 40;
+    width: 100%;
+}
+
+Post {
+    background: $boost;
+    padding: 1;
+    content-align: center middle;
+    height: 46;
+    width: 100%;
+    margin: 1 8;
 }
