@@ -16,6 +16,7 @@ Vertical {
 #welcome {
     text-align: center;
     width: 50;
+    margin: 1 0
 }
 
 .login-menu {

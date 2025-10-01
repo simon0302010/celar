@@ -17,7 +17,7 @@ except ImportError:
     from importlib_resources import files
 
 CELAR_TOKEN = None
-API_URL = "http://127.0.0.1:8000"
+API_URL = None
 
 class Post(VerticalGroup):
     def __init__(self, post_id, author: str, content: bytes, created_at: str, **kwargs):
@@ -162,10 +162,13 @@ class MainMenu(Screen):
         )
         yield Footer()
     
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    @work
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "login":
+            await self.app.push_screen_wait(SetApi())
             self.app.push_screen(LoginMenu())
         elif event.button.id == "register":
+            await self.app.push_screen_wait(SetApi())
             self.app.push_screen(RegisterMenu())
         elif event.button.id == "exit":
             self.app.exit()
@@ -281,7 +284,28 @@ class RegisterMenu(Screen):
             self.notify("User already exists.", severity="error")
         else:
             self.notify("An error occurred.", severity="error")
+
+class SetApi(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Vertical(
+            Static("Please set the API url.", id="welcome"),
+            Input("http://127.0.0.1:8000", id="api-url"),
+            Button("Continue", id="submit", variant="success", classes="main-menu-button"),
+            Button("Cancel", id="cancel", variant="error", classes="main-menu-button")
+        )
+        yield Footer()
         
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        global API_URL
+        if event.button.id == "submit":
+            api_input = self.query_one("#api-url", Input)
+            API_URL = api_input.value
+            self.app.notify(f"API URL set to: {API_URL}")
+            self.dismiss()
+        elif event.button.id == "cancel":
+            self.app.pop_screen()
+    
 class CelarApp(App):
     try:
         css_content = (files("celar") / "celar.tcss").read_text()
