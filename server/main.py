@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from pydantic import BaseModel
 from typing import List
+import uvicorn
 import sqlite3
 import bcrypt
 import json
@@ -24,11 +25,20 @@ def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("""
-       CREATE TABLE IF NOT EXISTS users (
-           username TEXT PRIMARY KEY,
-           password TEXT NOT NULL,
-           software TEXT
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT NOT NULL,
+            software TEXT
        ) 
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            author TEXT NOT NULL,
+            content BLOB NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(author) REFERENCES users(username)
+        )
     """)
     conn.commit()
     conn.close()
@@ -72,6 +82,15 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     username: str
     software: List[str]
+    
+class PostCreate(BaseModel):
+    content: bytes
+    
+class PostOut(BaseModel):
+    id: int
+    author: str
+    content: bytes
+    created_at: str
 
 # endpoints
 @app.post("/register")
@@ -142,3 +161,41 @@ def get_users(
         for row in rows
     ]
     return users
+
+@app.post("/post")
+def create_post(post: PostCreate, author: str = Depends(get_user)):
+    created_at = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)",
+        (author, post.content, created_at)
+    )
+    post_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return {"message": "Post created", "id": post_id}
+
+@app.get("/posts")
+def get_posts(
+    current_user: str = Depends(get_user),
+    limit: int = Query(20, ge=1, le=200)
+):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT id, author, content, created_at FROM posts LIMIT ?", (limit,))
+    rows = c.fetchall()
+    conn.close()
+    posts = [
+        {
+            "id": row[0],
+            "author": row[1],
+            "content": row[2],
+            "created_at": row[3]
+        }
+        for row in rows
+    ]
+    return posts
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", reload=True)
