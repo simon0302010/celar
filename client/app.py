@@ -92,15 +92,34 @@ class NewPost(Screen):
             if opened := await self.app.push_screen_wait(FileOpen()):
                 self.file_path = str(opened)
         elif event.button.id == "back":
-            self.app.push_screen(Feed())
+            self.app.pop_screen()
         elif event.button.id == "submit":
             if self.file_path:
                 if self.file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
-                    self.app.notify(self.file_path)
+                    self.create_post(self.file_path)
+                    self.app.push_screen(Feed())
                 else:
                     self.app.notify("Please select a valid image file.", severity="error")
             else:
                 self.app.notify("Please select an image first.", severity="error")
+                
+    def create_post(self, file_path):
+        img = PILImage.open(file_path)
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        img_bytes = buffer.getvalue()
+        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+        payload = {
+            "content": img_b64
+        }
+        headers = {
+            "Authorization": f"Bearer {CELAR_TOKEN}"
+        }
+        r = requests.post(f"{API_URL}/post", json=payload, headers=headers)
+        if r.status_code == 200:
+            self.app.notify("Post successfully created.")
+        else:
+            self.app.notify("An error occured. Try restarting the program.")
 
 class Feed(Screen):
     def __init__(self, **kwargs):
@@ -109,7 +128,11 @@ class Feed(Screen):
         headers = {
             "Authorization": f"Bearer {CELAR_TOKEN}"
         }
-        self.posts = requests.get(f"{API_URL}/posts", headers=headers).json()
+        response = requests.get(f"{API_URL}/posts", headers=headers)
+        if response.status_code != 200:
+            self.app.notify("An error occured. Try restarting the program.")
+        else:
+            self.posts = response.json()
     
     def compose(self) -> ComposeResult:
         yield Header()
