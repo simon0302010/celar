@@ -47,4 +47,30 @@ Post {
 
 PostScroll {
     align: center middle;
+    width: 100%
+}
+
+NewPost {
+    background: rgba(104, 104, 104, 0.25);
+}
+
+.new-post {
+    align: center middle;
+    content-align: center middle;
+    width: 30%;
+    height: 30%;
+    background: rgba(59, 59, 59, 1);
+}
+
+.file-open {
+    align: center middle;
+    content-align: center middle;
+    margin: 1 0;
+    width: 70%;
+}
+
+#new-post {
+    width: 100%;
+    align: center middle;
+    margin: 1 40;
 }

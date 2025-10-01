@@ -1,10 +1,11 @@
+from textual import on, work
 from textual.app import App, ComposeResult
-from textual.widget import Widget
 from textual.widgets import Footer, Header, Button, Static, Input, Checkbox
 from textual_image.widget import Image
-from textual.containers import Vertical, VerticalScroll, VerticalGroup
+from textual_fspicker import FileOpen
+from textual.containers import Vertical, VerticalScroll, VerticalGroup, Container
 from textual.screen import Screen
-from datetime import datetime, timezone
+from datetime import datetime
 from PIL import Image as PILImage
 from PIL import ImageFilter as PILImageFilter
 from io import BytesIO
@@ -72,6 +73,35 @@ class MultiCheckbox(VerticalScroll):
     def get_selected(self):
         return [cb.label for cb in self.checkboxes if cb.value]
 
+class NewPost(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.file_path = None
+    
+    def compose(self) -> ComposeResult:
+        yield VerticalGroup(
+            Button("Press to open an image", classes="file-open", id="open", variant="default"),
+            Button("Post", classes="file-open", id="submit", variant="success"),
+            Button("Back", classes="file-open", id="back", variant="warning"),
+            classes="new-post"
+        )
+        
+    @work
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "open":
+            if opened := await self.app.push_screen_wait(FileOpen()):
+                self.file_path = str(opened)
+        elif event.button.id == "back":
+            self.app.push_screen(Feed())
+        elif event.button.id == "submit":
+            if self.file_path:
+                if self.file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
+                    self.app.notify(self.file_path)
+                else:
+                    self.app.notify("Please select a valid image file.", severity="error")
+            else:
+                self.app.notify("Please select an image first.", severity="error")
+
 class Feed(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -85,9 +115,14 @@ class Feed(Screen):
         yield Header()
         if self.posts:
             yield PostScroll(self.posts)
+            yield Button("New post", id="new-post", variant="success")
         else:
             yield Static("No posts found.", classes="feed-text")
         yield Footer()
+        
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "new-post":
+            self.app.push_screen(NewPost())
 
 class MainMenu(Screen):
     def compose(self) -> ComposeResult:
