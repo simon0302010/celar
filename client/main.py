@@ -1,5 +1,8 @@
+from io import BytesIO
+from PIL import Image
 import questionary
 import requests
+import base64
 import sys
 import os
 
@@ -93,6 +96,23 @@ def get_users():
     }
     r = requests.get(f"{API_URL}/users?limit={limit}", headers=headers).json()
     print(r)
+    
+def create_post():
+    print("=== Create Post ===")
+    img_path = questionary.path("Select image").ask()
+    img = Image.open(img_path)
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    img_bytes = buffer.getvalue()
+    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+    payload = {
+        "content": img_b64
+    }
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}"
+    }
+    r = requests.post(f"{API_URL}/post", json=payload, headers=headers)
+    print(r.json())
 
 if __name__ == "__main__":
     while True:        
@@ -104,6 +124,7 @@ if __name__ == "__main__":
             "Read own profile",
             "Read other profile",
             "Get all users",
+            "Create Post",
             "Exit"
         ]).ask()
         
@@ -128,3 +149,8 @@ if __name__ == "__main__":
                 print("Please register or login first")
                 continue
             get_users()
+        elif answer == "Create Post":
+            if not ACCESS_TOKEN:
+                print("Please register or login first")
+                continue
+            create_post()

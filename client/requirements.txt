@@ -1,3 +1,5 @@
 requests
 questionary
 textual
+textual-image
+Pillow

@@ -1,13 +1,44 @@
 from textual.app import App, ComposeResult
 from textual.widget import Widget
 from textual.widgets import Footer, Header, Button, Static, Input, Checkbox
-from textual.containers import Vertical, VerticalScroll
+from textual_image.widget import Image
+from textual.containers import Vertical, VerticalScroll, VerticalGroup
 from textual.screen import Screen
+from PIL import Image as PILImage
+from io import BytesIO
 import requests
+import base64
 
 CELAR_TOKEN = None
 API_URL = "http://127.0.0.1:8000"
 
+class Post(VerticalGroup):
+    def __init__(self, post_id, author: str, content: bytes, created_at: str, **kwargs):
+        super().__init__(**kwargs)
+        self.post_id = post_id  # Use post_id instead of id
+        self.author = author
+        self.created_at = created_at
+        img_data = base64.b64decode(content)
+        self.img = PILImage.open(BytesIO(img_data))
+            
+    def compose(self) -> ComposeResult:
+        yield Static(self.author)
+        yield Static(self.created_at)
+        yield Image(self.img)
+        
+class PostScroll(VerticalScroll):
+    def __init__(self, posts: list, **kwargs):
+        super().__init__(**kwargs)
+        self.post_widgets = []
+        for post in posts:
+            self.post_widgets.append(
+                Post(post["id"], post["author"], post["content"], post["created_at"])
+            )
+            
+    def compose(self) -> ComposeResult:
+        for post in self.post_widgets:
+            yield post
+        
 class MultiCheckbox(VerticalScroll):
     def __init__(self, options, **kwargs):
         super().__init__(**kwargs)
@@ -22,8 +53,17 @@ class MultiCheckbox(VerticalScroll):
         return [cb.label for cb in self.checkboxes if cb.value]
 
 class Feed(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        headers = {
+            "Authorization": f"Bearer {CELAR_TOKEN}"
+        }
+        self.posts = requests.get(f"{API_URL}/posts", headers=headers).json()
+    
     def compose(self) -> ComposeResult:
         yield Header()
+        yield Static("Feed", classes="feed-text")
+        yield PostScroll(self.posts)
         yield Footer()
 
 class MainMenu(Screen):

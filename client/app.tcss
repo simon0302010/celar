@@ -24,3 +24,7 @@ Vertical {
     content-align: center middle;
     text-align: center;
 }
+
+.feed-text {
+    text-align: center;
+}

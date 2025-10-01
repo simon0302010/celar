@@ -120,7 +120,7 @@ def login(user: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     access_token = generate_token(
         data={"sub": user.username},
-        expires=timedelta(minutes=1)
+        expires=timedelta(hours=48)
     )
     return {"message": "Login successful", "access_token": access_token, "token_type": "bearer"}
 
