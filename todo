@@ -12,3 +12,8 @@
 - User Editing
 - Search
 - Web Interface
+- Demo Mode for Server (Block Register)
+- Dynamic Loading of Images
+- Loading bars to avoid UI freeze
+- Add "Remember me" for Login
+- Two Factor Authentication support

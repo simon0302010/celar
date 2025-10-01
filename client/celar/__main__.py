@@ -3,7 +3,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Button, Static, Input, Checkbox
 from textual_image.widget import Image
 from textual_fspicker import FileOpen
-from textual.containers import Vertical, VerticalScroll, VerticalGroup, Container
+from textual.containers import Vertical, VerticalScroll, VerticalGroup
 from textual.screen import Screen
 from datetime import datetime
 from PIL import Image as PILImage
@@ -137,14 +137,16 @@ class Feed(Screen):
             self.app.notify("An error occured. Try restarting the program.")
         else:
             self.posts = response.json()
+        if hasattr(self, "posts") and self.posts:
+            self.posts.sort(key=lambda post: post["id"], reverse=True)
     
     def compose(self) -> ComposeResult:
         yield Header()
         if self.posts:
             yield PostScroll(self.posts)
-            yield Button("New post", id="new-post", variant="success")
         else:
             yield Static("No posts found.", classes="feed-text")
+        yield Button("New post", id="new-post", variant="success")
         yield Footer()
         
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -188,7 +190,15 @@ class LoginMenu(Screen):
             Button("Back", id="back", variant="error", classes="login-menu")
         )
         yield Footer()
-        
+    
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        username = self.values["username"]
+        password = self.values["password"]
+        if username and password:
+            self.login(username, password)
+        else:
+            self.notify("Username and password can't be empty.", severity="error")
+    
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "back":
             self.app.push_screen(MainMenu())
@@ -295,7 +305,14 @@ class SetApi(Screen):
             Button("Cancel", id="cancel", variant="error", classes="main-menu-button")
         )
         yield Footer()
-        
+    
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        global API_URL
+        api_input = self.query_one("#api-url", Input)
+        API_URL = api_input.value
+        self.app.notify(f"API URL set to: {API_URL}")
+        self.dismiss()
+    
     def on_button_pressed(self, event: Button.Pressed) -> None:
         global API_URL
         if event.button.id == "submit":
