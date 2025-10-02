@@ -239,5 +239,37 @@ def get_likes(post_id: int, current_user: str = Depends(get_user), db: sqlite3.C
         "user_liked": user_liked
     }
     
+@app.post("/posts/{post_id}/like_toggle")
+def toggle_like(post_id: int, current_user: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    c.execute(
+        "SELECT 1 FROM post_likes WHERE post_id=? AND username=?",
+        (post_id, current_user)
+    )
+    already_liked = c.fetchone() is not None
+    if already_liked:
+        c.execute(
+            "DELETE FROM post_likes WHERE post_id=? AND username=?",
+            (post_id, current_user)
+        )
+    else:
+        c.execute(
+            "INSERT INTO post_likes (post_id, username) VALUES (?, ?)",
+            (post_id, current_user)
+        )
+        
+    db.commit()
+    
+    c.execute(
+        "SELECT COUNT(*) FROM post_likes WHERE post_id=?",
+        (post_id,)
+    )
+    like_count = c.fetchone()[0]
+    
+    return {
+        "like_count": like_count,
+        "user_liked": not already_liked
+    }
+
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True, host="0.0.0.0")

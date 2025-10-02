@@ -46,10 +46,48 @@ class Post(VerticalGroup):
         new_img.paste(self.img, (x, y))
 
         self.img = new_img
+        
+        # get likes
+        self.headers = {
+            "Authorization": f"Bearer {CELAR_TOKEN}"
+        }
+        response = requests.get(f"{API_URL}/posts/{post_id}/likes", headers=self.headers)
+        if response.status_code != 200:
+            self.app.notify("An error occured. Try restarting the program.", severity="error")
+            self.button_text = "Could not load likes."
+        else:
+            self.post_likes = response.json()
+                
+            self.button_text = (
+                f"Take coin back ({self.post_likes['like_count']} 🪙)"
+                if self.post_likes["user_liked"]
+                else f"Give it a coin ({self.post_likes['like_count']} 🪙)"
+            )
+          
     def compose(self) -> ComposeResult:
         yield Static(self.author, classes="feed-text")
         yield Static(self.created_at, classes="feed-text")
         yield Image(self.img)
+        yield Button(self.button_text, id="like-button", variant="primary")
+        
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "like-button":
+            # toggle like
+            response = requests.post(f"{API_URL}/posts/{self.post_id}/like_toggle", headers=self.headers)
+            if response.status_code != 200:
+                self.app.notify("An error occured. Try restarting the program.", severity="error")
+                self.button_text = "Could not load likes."
+            else:
+                self.post_likes = response.json()
+                
+                self.button_text = (
+                    f"Take coin back ({self.post_likes['like_count']} 🪙)"
+                    if self.post_likes["user_liked"]
+                    else f"Give it a coin ({self.post_likes['like_count']} 🪙)"
+                )
+            
+            button_widget = self.query_one("#like-button", Button)
+            button_widget.label = self.button_text
         
 class PostScroll(VerticalScroll):
     def __init__(self, posts: list, **kwargs):
@@ -123,7 +161,7 @@ class NewPost(Screen):
         if r.status_code == 200:
             self.app.notify("Post successfully created.")
         else:
-            self.app.notify("An error occured. Try restarting the program.")
+            self.app.notify("An error occured. Try restarting the program.", severity="error")
 
 class Feed(Screen):
     def __init__(self, **kwargs):
@@ -134,7 +172,7 @@ class Feed(Screen):
         }
         response = requests.get(f"{API_URL}/posts", headers=headers)
         if response.status_code != 200:
-            self.app.notify("An error occured. Try restarting the program.")
+            self.app.notify("An error occured. Try restarting the program.", severity="error")
         else:
             self.posts = response.json()
         if hasattr(self, "posts") and self.posts:

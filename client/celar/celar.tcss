@@ -41,7 +41,7 @@ Post {
     background: $boost;
     padding: 1;
     content-align: center middle;
-    height: 36;
+    height: 40;
     width: 60;
     margin: 1 8;
 }
@@ -74,4 +74,9 @@ NewPost {
     width: 100%;
     align: center middle;
     margin: 1 40;
+}
+
+#like-button {
+    margin: 1 0 0 0;
+    width: 100%
 }
