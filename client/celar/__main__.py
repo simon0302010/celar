@@ -3,7 +3,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Button, Static, Input, Checkbox
 from textual_image.widget import Image
 from textual_fspicker import FileOpen
-from textual.containers import Vertical, VerticalScroll, VerticalGroup
+from textual.containers import Vertical, VerticalScroll, VerticalGroup, Horizontal
 from textual.screen import Screen
 from datetime import datetime
 from PIL import Image as PILImage
@@ -177,9 +177,16 @@ class Feed(Screen):
             self.posts = response.json()
         if hasattr(self, "posts") and self.posts:
             self.posts.sort(key=lambda post: post["id"], reverse=True)
+            
+        response = requests.get(f"{API_URL}/profile", headers=headers)
+        if response.status_code != 200:
+            self.app.notify("An error occured. Try restarting the program.", severity="error")
+        else:
+            self.coins = response.json()["coins"]
     
     def compose(self) -> ComposeResult:
         yield Header()
+        yield Static(f"You have {self.coins} 🪙", classes="feed-text")
         if self.posts:
             yield PostScroll(self.posts)
         else:

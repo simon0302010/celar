@@ -78,5 +78,5 @@ NewPost {
 
 #like-button {
     margin: 1 0 0 0;
-    width: 100%
+    width: 100%;
 }
