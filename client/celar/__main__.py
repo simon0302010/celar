@@ -11,13 +11,13 @@ from PIL import ImageFilter as PILImageFilter
 from io import BytesIO
 import requests
 import base64
-try:
-    from importlib.resources import files
-except ImportError:
-    from importlib_resources import files
+from importlib.resources import files
+from importlib.metadata import version
 
 CELAR_TOKEN = None
 API_URL = None
+DEMO_MODE = False
+VERSION = version("celar")
 
 class Post(VerticalGroup):
     def __init__(self, post_id, author: str, content: bytes, created_at: str, **kwargs):
@@ -199,23 +199,28 @@ class Feed(Screen):
             self.app.push_screen(NewPost())
 
 class MainMenu(Screen):
+    def __init__(self, **kwargs):
+        global DEMO_MODE
+        super().__init__(**kwargs)
+        response = requests.get(f"{API_URL}/details").json()
+        if response.get("demo_mode", False):
+            self.app.notify("Registration is disabled in demo mode.", severity="error")
+            DEMO_MODE = True
+    
     def compose(self) -> ComposeResult:
         yield Header()
         yield Vertical(
             Static("Welcome to Celar.\nPress Register or Login to continue.", id="welcome"),
             Button("Login", id="login", variant="primary", classes="main-menu-button"),
-            Button("Register", id="register", variant="success", classes="main-menu-button"),
+            Button("Register", id="register", variant="success", classes="main-menu-button", disabled=DEMO_MODE),
             Button("Exit", id="exit", variant="error", classes="main-menu-button")
         )
         yield Footer()
     
-    @work
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "login":
-            await self.app.push_screen_wait(SetApi())
             self.app.push_screen(LoginMenu())
         elif event.button.id == "register":
-            await self.app.push_screen_wait(SetApi())
             self.app.push_screen(RegisterMenu())
         elif event.button.id == "exit":
             self.app.exit()
@@ -246,7 +251,7 @@ class LoginMenu(Screen):
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "back":
-            self.app.push_screen(MainMenu())
+            self.app.pop_screen()
         if event.button.id == "submit":
             username = self.values["username"]
             password = self.values["password"]
@@ -304,7 +309,7 @@ class RegisterMenu(Screen):
         
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "back":
-            self.app.push_screen(MainMenu())
+            self.app.pop_screen()
         if event.button.id == "submit":
             software = self.os_widget.get_selected() + self.lang_widget.get_selected()
             username = self.values["username"]
@@ -347,7 +352,7 @@ class SetApi(Screen):
             Static("Please set the API url.", id="welcome"),
             Input("http://127.0.0.1:8000", id="api-url"),
             Button("Continue", id="submit", variant="success", classes="main-menu-button"),
-            Button("Cancel", id="cancel", variant="error", classes="main-menu-button")
+            Button("Exit", id="exit", variant="error", classes="main-menu-button")
         )
         yield Footer()
     
@@ -356,7 +361,7 @@ class SetApi(Screen):
         api_input = self.query_one("#api-url", Input)
         API_URL = api_input.value
         self.app.notify(f"API URL set to: {API_URL}")
-        self.dismiss()
+        self.app.push_screen(MainMenu())
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
         global API_URL
@@ -364,9 +369,9 @@ class SetApi(Screen):
             api_input = self.query_one("#api-url", Input)
             API_URL = api_input.value
             self.app.notify(f"API URL set to: {API_URL}")
-            self.dismiss()
-        elif event.button.id == "cancel":
-            self.app.pop_screen()
+            self.app.push_screen(MainMenu())
+        elif event.button.id == "exit":
+            self.app.exit()
     
 class CelarApp(App):
     try:
@@ -379,7 +384,7 @@ class CelarApp(App):
     def on_mount(self) -> None:
         """Called when the app starts"""
         self.title = "Celar"
-        self.push_screen(MainMenu())
+        self.push_screen(SetApi())
         
     def action_toggle_dark(self) -> None:
         self.theme = (

@@ -13,6 +13,8 @@ import os
 # vars for tokens
 TOKEN_KEY = os.environ.get("CELAR_KEY")
 TOKEN_ALGORITHM = "HS256"
+DEMO_MODE = "demo" in sys.argv
+VERSION = "0.1.4"
 
 if not TOKEN_KEY:
     print("Please set CELAR_KEY.")
@@ -119,6 +121,13 @@ class PostOut(BaseModel):
     created_at: str
 
 # endpoints
+@app.get("/details")
+def get_details():
+    return {
+        "demo_mode": DEMO_MODE,
+        "version": VERSION
+    }
+
 @app.post("/register")
 def register(user: UserCreate, db: sqlite3.Connection = Depends(get_db)):
     salt = bcrypt.gensalt()
