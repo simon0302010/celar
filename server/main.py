@@ -40,6 +40,15 @@ def init_db():
             FOREIGN KEY(author) REFERENCES users(username)
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS post_likes (
+            post_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            PRIMARY KEY (post_id, username),
+            FOREIGN KEY (post_id) REFERENCES posts(id),
+            FOREIGN KEY (username) REFERENCES users(username)
+        )
+    """)
     conn.commit()
     conn.close()
     
@@ -192,5 +201,43 @@ def get_posts(
     ]
     return posts
 
+@app.post("/posts/{post_id}/like")
+def like_post(post_id: int, current_user: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    c.execute(
+        "INSERT OR IGNORE INTO post_likes (post_id, username) VALUES (?, ?)",
+        (post_id, current_user)
+    )
+    db.commit()
+    return {"message": "Post liked"}
+
+@app.delete("/posts/{post_id}/like")
+def unlike_post(post_id: int, current_user: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    c.execute(
+        "DELETE FROM post_likes WHERE post_id = ? AND username = ?",
+        (post_id, current_user)
+    )
+    db.commit()
+    return {"message": "Like removed"}
+
+@app.get("/posts/{post_id}/likes")
+def get_likes(post_id: int, current_user: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    c.execute(
+        "SELECT COUNT(*) FROM post_likes WHERE post_id=?",
+        (post_id,)
+    )
+    like_count = c.fetchone()[0]
+    c.execute(
+        "SELECT 1 FROM post_likes WHERE post_id=? AND username=?",
+        (post_id, current_user)
+    )
+    user_liked = c.fetchone() is not None
+    return {
+        "like_count": like_count,
+        "user_liked": user_liked
+    }
+    
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True, host="0.0.0.0")
