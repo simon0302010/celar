@@ -45,6 +45,13 @@ def init_db():
     
 init_db()
 
+def get_db():
+    conn = sqlite3.connect(DB_FILE)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
 def generate_token(data: dict, expires: timedelta):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires
@@ -94,28 +101,24 @@ class PostOut(BaseModel):
 
 # endpoints
 @app.post("/register")
-def register(user: UserCreate):
+def register(user: UserCreate, db: sqlite3.Connection = Depends(get_db)):
     salt = bcrypt.gensalt()
     hashed_pw = bcrypt.hashpw(user.password.encode('utf-8'), salt).decode('utf-8')
     
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
+    c = db.cursor()
     c.execute("SELECT username FROM users WHERE username=?", (user.username,))
     if c.fetchone():
         raise HTTPException(status_code=400, detail="Username already exists")
     c.execute("INSERT INTO users (username, password, software) VALUES (?, ?, ?)",
               (user.username, hashed_pw, json.dumps(user.software)))
-    conn.commit()
-    conn.close()
+    db.commit()
     return {"message": "User registered successfully"}
 
 @app.post("/login")
-def login(user: UserLogin):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
+def login(user: UserLogin, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
     c.execute("SELECT password FROM users WHERE username=?", (user.username,))
     row = c.fetchone()
-    conn.close()
     if not row or not bcrypt.checkpw(user.password.encode('utf-8'), row[0].encode('utf-8')):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     access_token = generate_token(
@@ -125,23 +128,19 @@ def login(user: UserLogin):
     return {"message": "Login successful", "access_token": access_token, "token_type": "bearer"}
 
 @app.get("/profile")
-def read_me(current_user: str = Depends(get_user)):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
+def read_me(current_user: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
     c.execute("SELECT username, software FROM users WHERE username=?", (current_user,))
     row = c.fetchone()
-    conn.close()
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
     return {"username": row[0], "software": json.loads(row[1])}
 
 @app.get("/profile/{username}")
-def read_other(username: str, current_user: str = Depends(get_user)):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
+def read_other(username: str, current_user: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
     c.execute("SELECT username, software FROM users WHERE username=?", (username,))
     row = c.fetchone()
-    conn.close()
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
     return {"username": row[0], "software": json.loads(row[1])}
@@ -149,13 +148,12 @@ def read_other(username: str, current_user: str = Depends(get_user)):
 @app.get("/users")
 def get_users(
     current_user: str = Depends(get_user),
-    limit: int = Query(50, ge=1, le=200)
+    limit: int = Query(50, ge=1, le=200),
+    db: sqlite3.Connection = Depends(get_db)
 ):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
+    c = db.cursor()
     c.execute("SELECT username, software FROM users LIMIT ?", (limit,))
     rows = c.fetchall()
-    conn.close()
     users = [
         {"username": row[0], "software": json.loads(row[1])}
         for row in rows
@@ -163,29 +161,26 @@ def get_users(
     return users
 
 @app.post("/post")
-def create_post(post: PostCreate, author: str = Depends(get_user)):
+def create_post(post: PostCreate, author: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
     created_at = datetime.now(timezone.utc).isoformat()
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
+    c = db.cursor()
     c.execute(
         "INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)",
         (author, post.content, created_at)
     )
     post_id = c.lastrowid
-    conn.commit()
-    conn.close()
+    db.commit()
     return {"message": "Post created", "id": post_id}
 
 @app.get("/posts")
 def get_posts(
     current_user: str = Depends(get_user),
-    limit: int = Query(20, ge=1, le=200)
+    limit: int = Query(20, ge=1, le=200),
+    db: sqlite3.Connection = Depends(get_db)
 ):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
+    c = db.cursor()
     c.execute("SELECT id, author, content, created_at FROM posts LIMIT ?", (limit,))
     rows = c.fetchall()
-    conn.close()
     posts = [
         {
             "id": row[0],
