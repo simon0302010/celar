@@ -84,6 +84,16 @@ def get_user(authorization: str = Header(...)):
         return username
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+    
+def get_user_coins(username: str, db_cursor: sqlite3.Cursor):
+    db_cursor.execute("""
+        SELECT COUNT(*)
+        FROM post_likes
+        JOIN posts ON post_likes.post_id = posts.id
+        WHERE posts.author = ?
+    """, (username,))
+    coins = db_cursor.fetchone()[0]
+    return coins
 
 # models
 class UserCreate(BaseModel):
@@ -143,7 +153,8 @@ def read_me(current_user: str = Depends(get_user), db: sqlite3.Connection = Depe
     row = c.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"username": row[0], "software": json.loads(row[1])}
+    coins = get_user_coins(current_user, c)
+    return {"username": row[0], "software": json.loads(row[1]), "coins": coins}
 
 @app.get("/profile/{username}")
 def read_other(username: str, current_user: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
@@ -152,7 +163,8 @@ def read_other(username: str, current_user: str = Depends(get_user), db: sqlite3
     row = c.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"username": row[0], "software": json.loads(row[1])}
+    coins = get_user_coins(username, c)
+    return {"username": row[0], "software": json.loads(row[1]), "coins": coins}
     
 @app.get("/users")
 def get_users(
@@ -270,6 +282,8 @@ def toggle_like(post_id: int, current_user: str = Depends(get_user), db: sqlite3
         "like_count": like_count,
         "user_liked": not already_liked
     }
+    
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True, host="0.0.0.0")
