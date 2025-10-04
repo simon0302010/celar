@@ -190,7 +190,7 @@ class Feed(Screen):
     
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static(f"You have {self.coins} 🪙", classes="feed-text")
+        yield Static(f"You received {self.coins} 🪙", classes="feed-text")
         if self.posts:
             yield PostScroll(self.posts)
         else:

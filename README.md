@@ -40,6 +40,7 @@ celar
 
 On launch, you'll be prompted to set the server URL
 There is a hosted instance at `https://celar.simon.hackclub.app` in demo mode (registration disabled) but you can also run your own server (see server docs).
+Login as the user `demo` with password `demo`.
 
 ## Documentation
 
