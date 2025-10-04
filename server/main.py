@@ -14,7 +14,7 @@ import os
 TOKEN_KEY = os.environ.get("CELAR_KEY")
 TOKEN_ALGORITHM = "HS256"
 DEMO_MODE = "demo" in sys.argv
-VERSION = "0.1.5"
+VERSION = "0.1.6"
 
 if not TOKEN_KEY:
     print("Please set CELAR_KEY.")
@@ -130,6 +130,8 @@ def get_details():
 
 @app.post("/register")
 def register(user: UserCreate, db: sqlite3.Connection = Depends(get_db)):
+    if DEMO_MODE:
+        raise HTTPException(status_code=401, detail="Can't create user account in demo mode.")
     salt = bcrypt.gensalt()
     hashed_pw = bcrypt.hashpw(user.password.encode('utf-8'), salt).decode('utf-8')
     

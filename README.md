@@ -45,6 +45,7 @@ There is a hosted instance at `https://celar.simon.hackclub.app` in demo mode (r
 
 - **[Server Documentation](server/README.md)**: Complete API reference, authentication, and deployment
 - **[Client Documentation](client/README.md)**: Installation, usage, and troubleshooting
+- **[API Endpoints](#api-overview)**: Quick reference for developers
 
 ## Acknowledgments
 

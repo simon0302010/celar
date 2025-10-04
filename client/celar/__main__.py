@@ -17,6 +17,7 @@ from importlib.metadata import version
 CELAR_TOKEN = None
 API_URL = None
 DEMO_MODE = False
+SERVER_DETAILS = {}
 VERSION = version("celar")
 
 class Post(VerticalGroup):
@@ -122,8 +123,8 @@ class NewPost(Screen):
     
     def compose(self) -> ComposeResult:
         yield VerticalGroup(
-            Button("Press to open an image", classes="file-open", id="open", variant="default"),
-            Button("Post", classes="file-open", id="submit", variant="success"),
+            Button("Press to open an image", classes="file-open", id="open", variant="success"),
+            Button("Post", classes="file-open", id="submit", variant="success", disabled=True),
             Button("Back", classes="file-open", id="back", variant="warning"),
             classes="new-post"
         )
@@ -133,6 +134,8 @@ class NewPost(Screen):
         if event.button.id == "open":
             if opened := await self.app.push_screen_wait(FileOpen()):
                 self.file_path = str(opened)
+                button_widget = self.query_one("#submit", Button)
+                button_widget.disabled = False
         elif event.button.id == "back":
             self.app.pop_screen()
         elif event.button.id == "submit":
@@ -147,6 +150,7 @@ class NewPost(Screen):
                 
     def create_post(self, file_path):
         img = PILImage.open(file_path)
+        img.thumbnail((512, 512), PILImage.Resampling.LANCZOS)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         img_bytes = buffer.getvalue()
@@ -202,8 +206,7 @@ class MainMenu(Screen):
     def __init__(self, **kwargs):
         global DEMO_MODE
         super().__init__(**kwargs)
-        response = requests.get(f"{API_URL}/details").json()
-        if response.get("demo_mode", False):
+        if SERVER_DETAILS.get("demo_mode", False):
             self.app.notify("Registration is disabled in demo mode.", severity="error")
             DEMO_MODE = True
     
@@ -357,17 +360,27 @@ class SetApi(Screen):
         yield Footer()
     
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        global API_URL
+        global API_URL, SERVER_DETAILS
         api_input = self.query_one("#api-url", Input)
         API_URL = api_input.value
+        try:
+            SERVER_DETAILS = requests.get(f"{API_URL}/details").json()
+        except:
+            self.app.notify("Could not connect to server.", severity="error")
+            return
         self.app.notify(f"API URL set to: {API_URL}")
         self.app.push_screen(MainMenu())
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        global API_URL
+        global API_URL, SERVER_DETAILS
         if event.button.id == "submit":
             api_input = self.query_one("#api-url", Input)
             API_URL = api_input.value
+            try:
+                SERVER_DETAILS = requests.get(f"{API_URL}/details").json()
+            except:
+                self.app.notify("Could not connect to server.", severity="error")
+                return
             self.app.notify(f"API URL set to: {API_URL}")
             self.app.push_screen(MainMenu())
         elif event.button.id == "exit":
