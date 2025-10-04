@@ -29,15 +29,12 @@ You can also run:
 python -m celar
 ```
 
-### Setup
+### API Url
 
-1. **Set API URL**: On launch, you'll be prompted to set the server URL
-   - Default: `http://127.0.0.1:8000`
-   - Change this to match your Celar server location
-
-2. **Register or Login**: 
-   - **Register**: Create a new account with username, password, and preferences
-   - **Login**: Use existing credentials
+On launch, you'll be prompted to set the server URL
+- Default: `http://127.0.0.1:8000`
+- You can set this to `https://celar.simon.hackclub.app` if you don't want to set up your own server (registration disabled).
+- Change this to match your Celar server location
 
 ### Navigation
 
