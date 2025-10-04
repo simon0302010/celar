@@ -299,4 +299,4 @@ if __name__ == "__main__":
     if "dev" in sys.argv:
         uvicorn.run("main:app", reload=True, host="127.0.0.1")
     else:
-        uvicorn.run("main:app", host="0.0.0.0", workers=4)
+        uvicorn.run("main:app", host="0.0.0.0", workers=4, port=8954)
