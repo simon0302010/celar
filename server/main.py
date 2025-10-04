@@ -14,7 +14,7 @@ import os
 TOKEN_KEY = os.environ.get("CELAR_KEY")
 TOKEN_ALGORITHM = "HS256"
 DEMO_MODE = "demo" in sys.argv
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
 if not TOKEN_KEY:
     print("Please set CELAR_KEY.")
