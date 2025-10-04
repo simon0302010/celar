@@ -89,6 +89,10 @@ class Post(VerticalGroup):
             
             button_widget = self.query_one("#like-button", Button)
             button_widget.label = self.button_text
+            
+            feed_screen = self.screen
+            if isinstance(feed_screen, Feed):
+                feed_screen.refresh_coins()
         
 class PostScroll(VerticalScroll):
     def __init__(self, posts: list, **kwargs):
@@ -171,10 +175,10 @@ class Feed(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.app.title = "Celar Feed"
-        headers = {
+        self.headers = {
             "Authorization": f"Bearer {CELAR_TOKEN}"
         }
-        response = requests.get(f"{API_URL}/posts", headers=headers)
+        response = requests.get(f"{API_URL}/posts", headers=self.headers)
         if response.status_code != 200:
             self.app.notify("An error occured. Try restarting the program.", severity="error")
         else:
@@ -182,7 +186,7 @@ class Feed(Screen):
         if hasattr(self, "posts") and self.posts:
             self.posts.sort(key=lambda post: post["id"], reverse=True)
             
-        response = requests.get(f"{API_URL}/profile", headers=headers)
+        response = requests.get(f"{API_URL}/profile", headers=self.headers)
         if response.status_code != 200:
             self.app.notify("An error occured. Try restarting the program.", severity="error")
         else:
@@ -190,7 +194,7 @@ class Feed(Screen):
     
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static(f"You received {self.coins} 🪙", classes="feed-text")
+        yield Static(f"You received {self.coins} 🪙", classes="feed-text", id="coins-count")
         if self.posts:
             yield PostScroll(self.posts)
         else:
@@ -201,6 +205,16 @@ class Feed(Screen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "new-post":
             self.app.push_screen(NewPost())
+            
+    def refresh_coins(self):
+        response = requests.get(f"{API_URL}/profile", headers=self.headers)
+        if response.status_code != 200:
+            self.app.notify("An error occured. Try restarting the program.", severity="error")
+        else:
+            self.coins = response.json()["coins"]
+            
+        coins_text = self.query_one("#coins-count", Static)
+        coins_text.content = f"You received {self.coins} 🪙"
 
 class MainMenu(Screen):
     def __init__(self, **kwargs):

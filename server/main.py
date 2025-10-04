@@ -14,7 +14,7 @@ import os
 TOKEN_KEY = os.environ.get("CELAR_KEY")
 TOKEN_ALGORITHM = "HS256"
 DEMO_MODE = "demo" in sys.argv
-VERSION = "0.1.6"
+VERSION = "0.1.7"
 
 if not TOKEN_KEY:
     print("Please set CELAR_KEY.")
@@ -24,7 +24,7 @@ app = FastAPI()
 DB_FILE = "database.db"
 
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -293,8 +293,10 @@ def toggle_like(post_id: int, current_user: str = Depends(get_user), db: sqlite3
         "like_count": like_count,
         "user_liked": not already_liked
     }
-    
-
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True, host="0.0.0.0")
+    import sys
+    if "dev" in sys.argv:
+        uvicorn.run("main:app", reload=True, host="127.0.0.1")
+    else:
+        uvicorn.run("main:app", host="0.0.0.0", workers=4)

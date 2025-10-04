@@ -54,6 +54,12 @@ python main.py demo
 ```
 > Runs the server in demo mode (registration disabled).
 
+### Dev Mode
+```bash
+python main.py dev
+```
+> Runs the server in development mode (auto reload enabled).
+
 ## API Documentation
 
 ### Base URL
