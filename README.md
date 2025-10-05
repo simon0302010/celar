@@ -9,12 +9,11 @@ A CLI social media app where likes are coins.
 
 ## Features
 
-- **Beautiful Terminal UI**: Modern TUI built with [Textual](https://textual.textualize.io/)
-- **Image Sharing**: Upload and view images directly in your terminal
+- **Modern Terminal UI**: TUI built with [Textual](https://textual.textualize.io/)
+- **Posting Images**: Post images from your terminal
 - **Coins**: Likes are represented as coins
 - **Cross-Platform**: Works on Linux, macOS, and Windows
-- **Self-Hosted**: Run your own Celar server
-- **REST API**: Complete FastAPI backend with JWT authentication
+- **Security**: Hashing of passwords and usage of auth tokens to avoid storing the password
 
 ## Quick Start
 
@@ -46,7 +45,6 @@ Login as the user `demo` with password `demo`.
 
 - **[Server Documentation](server/README.md)**: Complete API reference, authentication, and deployment
 - **[Client Documentation](client/README.md)**: Installation, usage, and troubleshooting
-- **[API Endpoints](#api-overview)**: Quick reference for developers
 
 ## Acknowledgments
 
