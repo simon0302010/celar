@@ -1,6 +1,6 @@
 # Celar
 
-A modern social media platform designed for developers and tech enthusiasts. Share images, connect with fellow programmers, and showcase your favorite technologies through a beautiful terminal user interface.
+A CLI social media app where likes are coins.
 
 ![Hackatime](https://hackatime-badge.hackclub.com/U08HC7N4JJW/celar)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
