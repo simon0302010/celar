@@ -107,6 +107,9 @@ class Post(VerticalGroup):
             )
             if response.status_code == 200:
                 self.app.notify("Post deleted successfully")
+                feed_screen = self.screen
+                if isinstance(feed_screen, Feed):
+                    feed_screen.refresh_coins()
                 self.remove()
             else:
                 self.app.notify("Failed to delete post", severity="error")
