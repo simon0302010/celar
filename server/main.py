@@ -244,6 +244,28 @@ def unlike_post(post_id: int, current_user: str = Depends(get_user), db: sqlite3
     db.commit()
     return {"message": "Like removed"}
 
+@app.delete("/posts/{post_id}")
+def delete_post(
+    post_id: int,
+    current_user: str = Depends(get_user),
+    db: sqlite3.Connection = Depends(get_db)
+):
+    c = db.cursor()
+    c.execute("SELECT author FROM posts WHERE id=?", (post_id,))
+    row = c.fetchone()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    if row[0] != current_user:
+        raise HTTPException(status_code=403, detail="You can only delete your own posts")
+    
+    c.execute("DELETE FROM post_likes WHERE post_id=?", (post_id,))
+    c.execute("DELETE FROM posts WHERE id=?", (post_id,))
+    db.commit()
+    
+    return {"message": "Post deleted successfully"}
+
 @app.get("/posts/{post_id}/likes")
 def get_likes(post_id: int, current_user: str = Depends(get_user), db: sqlite3.Connection = Depends(get_db)):
     c = db.cursor()

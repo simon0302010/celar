@@ -43,6 +43,7 @@ On launch, you'll be prompted to set the server URL
 - **Enter/Space**: Activate buttons
 - **Escape**: Go back or exit
 - **D**: Toggle between dark and light themes
+- **Q**: Quit the application
 
 ### Features
 

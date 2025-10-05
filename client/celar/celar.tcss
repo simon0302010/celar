@@ -76,7 +76,17 @@ NewPost {
     margin: 1 40;
 }
 
-#like-button {
+.like-button-del {
+    margin: 1 1 0 0;
+    width: 50%;
+}
+
+#delete-button {
+    margin: 1 0 0 0;
+    width: 50%;
+}
+
+.like-button {
     margin: 1 0 0 0;
     width: 100%;
 }

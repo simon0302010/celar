@@ -18,6 +18,7 @@ CELAR_TOKEN = None
 API_URL = None
 DEMO_MODE = False
 SERVER_DETAILS = {}
+CURRENT_USER = None
 VERSION = version("celar")
 
 class Post(VerticalGroup):
@@ -69,7 +70,13 @@ class Post(VerticalGroup):
         yield Static(self.author, classes="feed-text")
         yield Static(self.created_at, classes="feed-text")
         yield Image(self.img)
-        yield Button(self.button_text, id="like-button", variant="primary")
+        if self.author == CURRENT_USER:
+            yield Horizontal(
+                Button(self.button_text, id="like-button", variant="primary", classes="like-button-del"),
+                Button("Delete", id="delete-button", variant="error")
+            )
+        else:
+            yield Button(self.button_text, id="like-button", variant="primary", classes="like-button")
         
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "like-button":
@@ -93,6 +100,16 @@ class Post(VerticalGroup):
             feed_screen = self.screen
             if isinstance(feed_screen, Feed):
                 feed_screen.refresh_coins()
+        elif event.button.id == "delete-button":
+            response = requests.delete(
+                f"{API_URL}/posts/{self.post_id}",
+                headers=self.headers
+            )
+            if response.status_code == 200:
+                self.app.notify("Post deleted successfully")
+                self.remove()
+            else:
+                self.app.notify("Failed to delete post", severity="error")
         
 class PostScroll(VerticalScroll):
     def __init__(self, posts: list, **kwargs):
@@ -281,7 +298,7 @@ class LoginMenu(Screen):
         self.values[str(event.input.id) or ""] = event.input.value
         
     def login(self, username, password):
-        global CELAR_TOKEN
+        global CELAR_TOKEN, CURRENT_USER
         try:
             r = requests.post(f"{API_URL}/login", json={
                 "username": username,
@@ -292,6 +309,7 @@ class LoginMenu(Screen):
             return
         if r.status_code == 200:
             CELAR_TOKEN = r.json()["access_token"]
+            CURRENT_USER = username
             self.notify("Login successful.")
             self.app.push_screen(Feed())
         elif r.status_code == 401:
@@ -367,7 +385,7 @@ class SetApi(Screen):
         yield Header()
         yield Vertical(
             Static("Please set the API url.", id="welcome"),
-            Input("http://127.0.0.1:8000", id="api-url"),
+            Input("http://127.0.0.1:8954", id="api-url"),
             Button("Continue", id="submit", variant="success", classes="main-menu-button"),
             Button("Exit", id="exit", variant="error", classes="main-menu-button")
         )
@@ -406,7 +424,7 @@ class CelarApp(App):
         CSS = css_content
     except FileNotFoundError:
         CSS_PATH = "celar.tcss"
-    BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+    BINDINGS = [("d", "toggle_dark", "Toggle dark mode"), ("q", "quit_app", "Quit")]
 
     def on_mount(self) -> None:
         """Called when the app starts"""
@@ -417,6 +435,9 @@ class CelarApp(App):
         self.theme = (
             "textual-dark" if self.theme == "textual-light" else "textual-light"
         )
+        
+    def action_quit_app(self) -> None:
+        self.exit()
 
 def main():
     app = CelarApp()
